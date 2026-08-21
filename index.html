@@ -472,11 +472,15 @@
      * Xem hướng dẫn lấy config trong README.md đi kèm.
      * ================================================================== */
     const FIREBASE_CONFIG = {
-      apiKey: "",
-      authDomain: "",
-      databaseURL: "",
-      projectId: "",
-    };
+        apiKey: "AIzaSyAH1LTyAB5YvcXbn1-kQxMgxHoNqYDCy4A",
+        authDomain: "quan-cafe-pos.firebaseapp.com",
+        databaseURL: "https://quan-cafe-pos-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "quan-cafe-pos",
+        storageBucket: "quan-cafe-pos.firebasestorage.app",
+        messagingSenderId: "301093136858",
+        appId: "1:301093136858:web:62bc0782ced6621a1e78e3",
+        measurementId: "G-X1PCLGVF8S"
+      };
 
     const FIREBASE_ENABLED = !!FIREBASE_CONFIG.databaseURL;
 
@@ -490,16 +494,6 @@
       const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
       const { getDatabase, ref: dref, onValue, set, remove, push } =
         await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
-      const FIREBASE_CONFIG = {
-        apiKey: "AIzaSyAH1LTyAB5YvcXbn1-kQxMgxHoNqYDCy4A",
-        authDomain: "quan-cafe-pos.firebaseapp.com",
-        databaseURL: "https://quan-cafe-pos-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "quan-cafe-pos",
-        storageBucket: "quan-cafe-pos.firebasestorage.app",
-        messagingSenderId: "301093136858",
-        appId: "1:301093136858:web:62bc0782ced6621a1e78e3",
-        measurementId: "G-X1PCLGVF8S"
-      };
       const app = initializeApp(FIREBASE_CONFIG);
       const rtdb = getDatabase(app);
       return {
