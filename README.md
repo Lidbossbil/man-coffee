@@ -1,6 +1,6 @@
 # Coffee POS — Man Coffee
 
-SPA quản lý quầy cà phê: bàn đang mở, order, menu, dashboard doanh thu. Vue 3 ESM + Firebase Realtime Database (fallback `localStorage`). **Không build step** — mở `index.html` hoặc deploy GitHub Pages.
+SPA quản lý quầy cà phê: bàn đang mở, order, menu, dashboard doanh thu. Vue 3 ESM + Firebase Auth + Realtime Database (fallback `localStorage`). **Không build step** — mở `index.html` hoặc deploy GitHub Pages.
 
 ## Cấu trúc thư mục
 
@@ -8,13 +8,14 @@ SPA quản lý quầy cà phê: bàn đang mở, order, menu, dashboard doanh th
 Man_Coffee/
 ├── index.html                 # shell: CDN, #app, import js/app.js
 ├── css/
-│   └── app.css                # style (ticket, stamp, fade…)
+│   └── app.css                # style (ticket, stamp, AI chatbox…)
 ├── js/
 │   ├── config.js              # FIREBASE_CONFIG + IMGBB_API_KEY
+│   ├── firebase.js            # shared initializeApp (Auth + RTDB)
 │   ├── db.js                  # Firebase / localStorage backend
-│   ├── auth.js                # tài khoản + session
+│   ├── auth.js                # Firebase Auth (email/password)
 │   ├── utils.js               # fmt, startOfDay/Week/Month
-│   ├── app.js                 # createApp, state, tabs, mount
+│   ├── app.js                 # createApp, auth gate, tabs, mount
 │   ├── views/
 │   │   ├── LoginView.js
 │   │   ├── DashboardView.js
@@ -25,7 +26,8 @@ Man_Coffee/
 │       ├── OpenTableModal.js
 │       ├── OrderModal.js
 │       ├── MenuModal.js
-│       └── ToastHost.js
+│       ├── ToastHost.js
+│       └── AiChatbox.js       # FAB Gemini (API key localStorage)
 └── README.md
 ```
 
@@ -33,22 +35,38 @@ CDN: Vue 3, Firebase, Chart.js, Tailwind, Font Awesome. Import tương đối (`
 
 ## Chạy local
 
-Mở `index.html` bằng trình duyệt (hoặc static server). Không cấu hình Firebase → dữ liệu lưu `localStorage` (1 thiết bị).
+Mở `index.html` bằng trình duyệt (hoặc static server). Không cấu hình Firebase (`databaseURL` trống) → dữ liệu `localStorage` + session demo `{ username: 'local' }` (1 thiết bị, không Auth).
+
+> Production / nhiều thiết bị: bắt buộc bật Firebase + Authentication + Rules bên dưới.
 
 > Lưu ý: module ESM cần phục vụ qua HTTP (không phải `file://` trên một số trình duyệt). Có thể dùng `npx serve .` hoặc Live Server.
 
-## Đăng nhập
+## Đăng nhập (Firebase Auth)
 
-Tài khoản hardcode trong [`js/auth.js`](js/auth.js) (client-side, không backend):
+Mật khẩu **không** nằm trong repo — tạo user trên Firebase Console.
 
-| Username   | Password  | Role  |
-|------------|-----------|-------|
-| `thuthuy`  | `admin`   | admin |
-| `thanhnam` | `nhanvien`| staff |
+### 1. Bật Email/Password
+Firebase Console → **Authentication → Sign-in method → Email/Password → Enable**.
 
-Session lưu `localStorage` key `cpos_auth` (username + timestamp). Chưa login → chỉ hiện form đăng nhập; đăng xuất trên header.
+### 2. Tạo user nhân viên
+**Authentication → Users → Add user** — ví dụ `thuthuy@man.coffee` / mật khẩu mạnh; tương tự các nhân viên khác.
 
-**Bảo mật:** mật khẩu nằm trong JS — ai xem source cũng thấy. Chấp nhận được cho POS nội bộ quán, **không** dùng cho hệ thống cần bảo mật cao.
+### 3. Realtime Database Rules
+Khi đã dùng Auth, siết Rules (không còn mở public):
+
+```json
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null"
+  }
+}
+```
+
+App chỉ `watch` RTDB **sau khi đăng nhập**. Header hiện phần trước `@` của email.
+
+### Giới hạn thực tế
+`FIREBASE_CONFIG.apiKey` vẫn public (bình thường với Firebase client). Bảo vệ thật sự đến từ **Auth + Rules**: người lạ không đọc/ghi RTDB nếu chưa login. Có thể bật App Check sau nếu cần siết thêm.
 
 ## Firebase Realtime Database (đồng bộ nhiều thiết bị)
 
@@ -56,9 +74,9 @@ Session lưu `localStorage` key `cpos_auth` (username + timestamp). Chưa login 
 https://console.firebase.google.com → **Add project**.
 
 ### 2. Tạo Realtime Database
-**Build → Realtime Database → Create Database** → khu vực gần VN (Singapore) → **Start in test mode**.
+**Build → Realtime Database → Create Database** → khu vực gần VN (Singapore).
 
-> Test mode hết hạn sau ~30 ngày. Vào **Rules** và set `".read": true, ".write": true` nếu chấp nhận rủi ro cho app nội bộ.
+> Sau khi bật Auth, dùng Rules `auth != null` ở trên (không để test mode mở mãi).
 
 ### 3. Lấy config Web
 **Project settings → Your apps → Web `</>`** → copy `apiKey`, `authDomain`, `databaseURL`, `projectId`.
@@ -73,7 +91,17 @@ export const FIREBASE_CONFIG = {
 };
 ```
 
-Paths RTDB: `menu`, `tables`, `sales`. Để trống `databaseURL` → fallback localStorage.
+Paths RTDB: `menu`, `tables`, `sales`. Để trống `databaseURL` → fallback localStorage + session local.
+
+## Trợ lý AI (Gemini chatbox)
+
+FAB góc dưới phải (sau khi đăng nhập). Nhân viên tự dán **Gemini API key** trong app (bánh răng) — lưu `localStorage` key `cpos_gemini_key`.
+
+1. Tạo key tại https://aistudio.google.com/apikey
+2. Mở chatbox → bánh răng → dán key → **Lưu key** (có nút **Xóa** để gỡ).
+3. **Không** commit key vào `js/config.js` hay repo.
+
+Gọi `gemini-2.0-flash` (Google AI) với system prompt trợ lý quán cà phê / POS (tiếng Việt).
 
 ## Upload ảnh món (ImgBB)
 
@@ -106,5 +134,7 @@ Tùy chọn khác: Firebase Hosting, Netlify Drop.
 ## Kiến trúc ngắn
 
 - **Vue 3 ESM**: state reactive (`tables`, `menuItems`, `salesHistory`); đổi view bằng tab trong một SPA.
+- **Firebase Auth** + shared `firebase.js`; RTDB chỉ sau login.
 - **Firebase RTDB** = DB dùng chung; không cấu hình vẫn chạy localStorage (+ `BroadcastChannel` giữa các tab).
 - **`salesHistory`**: đơn đã đóng — dashboard KPI/chart và lịch sử đóng bàn đọc từ đây.
+- **AiChatbox**: Gemini key trên máy nhân viên (`localStorage`).

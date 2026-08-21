@@ -4,24 +4,27 @@ import { login } from '../auth.js';
 export default {
   emits: ['success'],
   setup(_, { emit }) {
-    const username = ref('');
+    const email = ref('');
     const password = ref('');
     const error = ref('');
     const loading = ref(false);
 
-    function submit() {
+    async function submit() {
       error.value = '';
       loading.value = true;
-      const result = login(username.value, password.value);
-      loading.value = false;
-      if (!result.ok) {
-        error.value = result.error;
-        return;
+      try {
+        const result = await login(email.value, password.value);
+        if (!result.ok) {
+          error.value = result.error;
+          return;
+        }
+        emit('success', result.session);
+      } finally {
+        loading.value = false;
       }
-      emit('success', result.session);
     }
 
-    return { username, password, error, loading, submit };
+    return { email, password, error, loading, submit };
   },
   template: `
   <div class="min-h-screen flex items-center justify-center p-4 bg-ink text-paper">
@@ -36,10 +39,10 @@ export default {
 
       <form @submit.prevent="submit" class="bg-ink2 border border-white/10 rounded-2xl p-5 space-y-4">
         <div>
-          <label class="text-xs text-paper/50 font-mono">Tên đăng nhập</label>
-          <input v-model="username" autocomplete="username"
+          <label class="text-xs text-paper/50 font-mono">Email</label>
+          <input v-model="email" type="email" autocomplete="email"
             class="w-full mt-1 bg-ink border border-white/10 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-copper"
-            placeholder="username">
+            placeholder="nhanvien@man.coffee">
         </div>
         <div>
           <label class="text-xs text-paper/50 font-mono">Mật khẩu</label>

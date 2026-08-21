@@ -1,7 +1,7 @@
-import { createApp, reactive, ref, computed, onMounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
+import { createApp, reactive, ref, computed, onMounted, onUnmounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
 import { FIREBASE_ENABLED } from './config.js';
 import { makeFirebaseBackend, makeLocalBackend } from './db.js';
-import { getSession, logout as clearSession } from './auth.js';
+import { watchAuth, logout as firebaseLogout } from './auth.js';
 import { fmt, tableTotal, tableRemaining } from './utils.js';
 
 import LoginView from './views/LoginView.js';
@@ -13,8 +13,11 @@ import OpenTableModal from './components/OpenTableModal.js';
 import OrderModal from './components/OrderModal.js';
 import MenuModal from './components/MenuModal.js';
 import ToastHost from './components/ToastHost.js';
+import AiChatbox from './components/AiChatbox.js';
 
 let dbApi;
+let unwatchAuth = null;
+let dbWatchesStarted = false;
 
 const DEFAULT_MENU = [
   { id: 'm1', name: 'Cà Phê Đen', size: 'M', price: 15000, image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=300', isVisible: true },
@@ -35,9 +38,11 @@ createApp({
     OrderModal,
     MenuModal,
     ToastHost,
+    AiChatbox,
   },
   setup() {
-    const session = ref(getSession());
+    const session = ref(null);
+    const authReady = ref(false);
     const firebaseReady = ref(false);
     const currentView = ref('dashboard');
     const showSyncInfo = ref(false);
@@ -52,6 +57,28 @@ createApp({
     const tables = ref([]);
     const salesHistory = ref([]);
 
+    function startDbWatches() {
+      if (dbWatchesStarted || !dbApi) return;
+      dbWatchesStarted = true;
+      dbApi.watch('menu', (data) => {
+        const list = Object.entries(data).map(([id, v]) => ({ id, ...v }));
+        menuItems.value = list.length ? list : DEFAULT_MENU;
+        if (!list.length) DEFAULT_MENU.forEach(({ id, ...rest }) => dbApi.setItem('menu', id, rest));
+      });
+      dbApi.watch('tables', (data) => {
+        tables.value = Object.entries(data).map(([id, v]) => ({ id, items: [], paidAmount: 0, ...v }));
+      });
+      dbApi.watch('sales', (data) => {
+        salesHistory.value = Object.entries(data).map(([id, v]) => ({ id, ...v }));
+      });
+    }
+
+    function clearLocalState() {
+      menuItems.value = [];
+      tables.value = [];
+      salesHistory.value = [];
+    }
+
     onMounted(async () => {
       if (FIREBASE_ENABLED) {
         try {
@@ -65,17 +92,16 @@ createApp({
         dbApi = makeLocalBackend();
       }
 
-      dbApi.watch('menu', (data) => {
-        const list = Object.entries(data).map(([id, v]) => ({ id, ...v }));
-        menuItems.value = list.length ? list : DEFAULT_MENU;
-        if (!list.length) DEFAULT_MENU.forEach(({ id, ...rest }) => dbApi.setItem('menu', id, rest));
+      unwatchAuth = watchAuth((s) => {
+        session.value = s;
+        authReady.value = true;
+        if (s) startDbWatches();
+        else clearLocalState();
       });
-      dbApi.watch('tables', (data) => {
-        tables.value = Object.entries(data).map(([id, v]) => ({ id, items: [], paidAmount: 0, ...v }));
-      });
-      dbApi.watch('sales', (data) => {
-        salesHistory.value = Object.entries(data).map(([id, v]) => ({ id, ...v }));
-      });
+    });
+
+    onUnmounted(() => {
+      unwatchAuth?.();
     });
 
     const toasts = ref([]);
@@ -92,11 +118,13 @@ createApp({
 
     function onLoginSuccess(s) {
       session.value = s;
+      startDbWatches();
     }
-    function doLogout() {
-      clearSession();
+    async function doLogout() {
+      await firebaseLogout();
       session.value = null;
       currentView.value = 'dashboard';
+      clearLocalState();
     }
 
     const showOpenTableModal = ref(false);
@@ -213,7 +241,7 @@ createApp({
     }
 
     return {
-      session, onLoginSuccess, doLogout,
+      authReady, session, onLoginSuccess, doLogout,
       firebaseReady, currentView, showSyncInfo, tabs, currentDateStr,
       menuItems, tables, sortedTables, salesHistory,
       showOpenTableModal, newTableName, newTableType, openNewTableDialog, confirmOpenTable,
@@ -224,7 +252,11 @@ createApp({
     };
   },
   template: `
-  <LoginView v-if="!session" @success="onLoginSuccess" />
+  <div v-if="!authReady" class="min-h-screen flex items-center justify-center bg-ink text-paper/50 font-mono text-sm">
+    Đang kiểm tra phiên…
+  </div>
+
+  <LoginView v-else-if="!session" @success="onLoginSuccess" />
 
   <div v-else class="min-h-screen flex flex-col">
     <AppHeader
@@ -299,6 +331,7 @@ createApp({
     </div>
 
     <ToastHost :toasts="toasts" />
+    <AiChatbox />
   </div>
   `,
 }).mount('#app');
