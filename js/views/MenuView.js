@@ -20,8 +20,8 @@ export default {
       </button>
     </div>
 
-    <div class="bg-ink2 border border-white/5 rounded-xl overflow-hidden">
-      <table class="w-full text-left text-sm">
+    <div class="bg-ink2 border border-white/5 rounded-xl overflow-x-auto">
+      <table class="w-full min-w-[560px] text-left text-sm">
         <thead>
           <tr class="text-[11px] uppercase tracking-wider text-paper/40 font-mono border-b border-white/5">
             <th class="p-3">Ảnh</th><th class="p-3">Tên món</th><th class="p-3">Size</th>
