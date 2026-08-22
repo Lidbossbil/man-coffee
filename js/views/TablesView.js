@@ -16,7 +16,7 @@ export default {
     sortedTables: { type: Array, default: () => [] },
     salesHistory: { type: Array, default: () => [] },
   },
-  emits: ['open-new', 'open-order', 'delete-table'],
+  emits: ['open-new', 'open-order', 'delete-table', 'delete-sale'],
   setup(props) {
     const closedHistoryGroups = computed(() => {
       const sorted = [...props.salesHistory].sort((a, b) => b.closedAt - a.closedAt);
@@ -63,14 +63,14 @@ export default {
       </button>
     </div>
 
-    <div v-if="sortedTables.length === 0" class="border border-dashed border-white/10 rounded-xl py-16 text-center text-paper/30">
+    <div v-if="sortedTables.length === 0" class="border border-dashed border-black/10 rounded-xl py-16 text-center text-paper/30">
       <i class="fa-solid fa-mug-saucer text-3xl mb-3"></i>
       <p class="text-sm">Chưa có bàn nào đang mở. Nhấn "Mở Bàn Mới" khi có khách vào.</p>
     </div>
 
     <transition-group tag="div" name="fade" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       <div v-for="tb in sortedTables" :key="tb.id" @click="$emit('open-order', tb)"
-        class="ticket text-ink p-4 pt-5 pb-6 cursor-pointer hover:-translate-y-0.5 transition-transform shadow-lg">
+        class="ticket text-paper p-4 pt-5 pb-6 cursor-pointer hover:-translate-y-0.5 transition-transform shadow-lg">
         <div class="flex justify-between items-start mb-2">
           <div>
             <p class="font-mono text-[10px] text-ash">#{{ tb.code }}</p>
@@ -112,7 +112,7 @@ export default {
         <p class="text-sm text-paper/50">Các bàn đã thanh toán đủ và đóng</p>
       </div>
 
-      <div v-if="closedHistoryGroups.length === 0" class="border border-dashed border-white/10 rounded-xl py-10 text-center text-paper/30">
+      <div v-if="closedHistoryGroups.length === 0" class="border border-dashed border-black/10 rounded-xl py-10 text-center text-paper/30">
         <p class="text-sm">Chưa có lịch sử đóng bàn.</p>
       </div>
 
@@ -121,12 +121,18 @@ export default {
         <h4 class="font-display text-lg font-semibold text-paper/80">{{ group.label }}</h4>
         <div class="space-y-2">
           <div v-for="row in group.items" :key="row.id"
-            class="flex flex-wrap items-center justify-between gap-2 bg-ink2 border border-white/5 rounded-lg px-4 py-3 text-sm">
+            class="flex flex-wrap items-center justify-between gap-2 bg-ink2 border border-black/5 rounded-lg px-4 py-3 text-sm">
             <div class="min-w-0">
               <p class="font-semibold truncate">{{ row.tableName }}</p>
               <p class="text-[11px] font-mono text-paper/40">{{ row.time }} · {{ row.cups }} ly</p>
             </div>
-            <span class="font-mono font-semibold text-copper shrink-0">{{ fmt(row.total) }}</span>
+            <div class="flex items-center gap-3 shrink-0">
+              <span class="font-mono font-semibold text-copper">{{ fmt(row.total) }}</span>
+              <button @click="$emit('delete-sale', row)" title="Xóa khỏi lịch sử"
+                class="text-ash hover:text-rust text-xs">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
           </div>
         </div>
       </div>
