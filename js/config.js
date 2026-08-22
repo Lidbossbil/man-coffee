@@ -14,4 +14,4 @@ export const FIREBASE_CONFIG = {
 export const FIREBASE_ENABLED = !!FIREBASE_CONFIG.databaseURL;
 
 /* ImgBB API key — lấy tại https://api.imgbb.com (upload ảnh món, tùy chọn) */
-export const IMGBB_API_KEY = "";
+export const IMGBB_API_KEY = "48a15e74754c2a81c0bc046e38973cd6";

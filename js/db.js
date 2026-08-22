@@ -1,11 +1,10 @@
-import { FIREBASE_CONFIG } from './config.js';
+import { getFirebaseDatabase } from './firebase.js';
 
 export async function makeFirebaseBackend() {
-  const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
-  const { getDatabase, ref: dref, onValue, set, remove, push } =
+  const rtdb = await getFirebaseDatabase();
+  if (!rtdb) throw new Error('Firebase databaseURL chưa cấu hình');
+  const { ref: dref, onValue, set, remove, push } =
     await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
-  const app = initializeApp(FIREBASE_CONFIG);
-  const rtdb = getDatabase(app);
   return {
     watch(path, cb) {
       onValue(dref(rtdb, path), (snap) => cb(snap.val() || {}));
