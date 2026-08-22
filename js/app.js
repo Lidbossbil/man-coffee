@@ -191,22 +191,67 @@ createApp({
       await persistActiveTable();
       toast(`Ghi nhận đã trả ${fmt(amt)}`);
     }
+    async function closeTableToHistory(tb) {
+      const total = tableTotal(tb);
+      const saleId = dbApi.newId('sales');
+      await dbApi.setItem('sales', saleId, {
+        items: tb.items || [],
+        total,
+        closedAt: Date.now(),
+        tableName: tb.name,
+      });
+      await dbApi.removeItem('tables', tb.id);
+    }
+
     async function processFullPayAndClose() {
       if (!activeTable.value?.items?.length) return;
       const total = tableTotal(activeTable.value);
       const remaining = total - (activeTable.value.paidAmount || 0);
       if (remaining > 0) activeTable.value.paidAmount = total;
-      const saleId = dbApi.newId('sales');
-      await dbApi.setItem('sales', saleId, {
-        items: activeTable.value.items,
-        total,
-        closedAt: Date.now(),
-        tableName: activeTable.value.name,
-      });
-      await dbApi.removeItem('tables', activeTable.value.id);
+      await closeTableToHistory(activeTable.value);
       showOrderModal.value = false;
       toast(`Đã thanh toán & đóng ${activeTable.value.name}`);
       activeTable.value = null;
+    }
+
+    const showDeleteConfirm = ref(false);
+    const pendingDeleteTable = ref(null);
+
+    function requestDeleteTable(tb) {
+      pendingDeleteTable.value = tb;
+      showDeleteConfirm.value = true;
+    }
+    function cancelDeleteTable() {
+      showDeleteConfirm.value = false;
+      pendingDeleteTable.value = null;
+    }
+    async function confirmDeleteTable() {
+      if (!pendingDeleteTable.value) return;
+      const name = pendingDeleteTable.value.name;
+      await closeTableToHistory(pendingDeleteTable.value);
+      showDeleteConfirm.value = false;
+      pendingDeleteTable.value = null;
+      toast(`Đã xóa ${name} và chuyển vào lịch sử`);
+    }
+
+    const showDeleteSaleConfirm = ref(false);
+    const pendingDeleteSale = ref(null);
+
+    function requestDeleteSale(row) {
+      pendingDeleteSale.value = row;
+      showDeleteSaleConfirm.value = true;
+    }
+    function cancelDeleteSale() {
+      showDeleteSaleConfirm.value = false;
+      pendingDeleteSale.value = null;
+    }
+    async function confirmDeleteSale() {
+      if (!pendingDeleteSale.value) return;
+      const name = pendingDeleteSale.value.tableName;
+      await dbApi.removeItem('sales', pendingDeleteSale.value.id);
+      showDeleteSaleConfirm.value = false;
+      pendingDeleteSale.value = null;
+      toast(`Đã xóa lịch sử ${name}`);
     }
 
     const showMenuModal = ref(false);
@@ -247,6 +292,8 @@ createApp({
       showOpenTableModal, newTableName, newTableType, openNewTableDialog, confirmOpenTable,
       showOrderModal, activeTable, visibleMenu, orderTotal, orderRemaining, partialPayInput,
       openOrderModal, closeOrderModal, addItemToOrder, changeQty, saveTempState, processPartialPay, processFullPayAndClose,
+      showDeleteConfirm, pendingDeleteTable, requestDeleteTable, cancelDeleteTable, confirmDeleteTable,
+      showDeleteSaleConfirm, pendingDeleteSale, requestDeleteSale, cancelDeleteSale, confirmDeleteSale,
       showMenuModal, editingMenuItem, menuForm, openMenuDialog, saveMenuItem, toggleVisibility, deleteMenuItem,
       toasts,
     };
@@ -282,6 +329,8 @@ createApp({
         :sales-history="salesHistory"
         @open-new="openNewTableDialog"
         @open-order="openOrderModal"
+        @delete-table="requestDeleteTable"
+        @delete-sale="requestDeleteSale"
       />
       <MenuView
         v-else-if="currentView === 'menu'"
@@ -323,10 +372,32 @@ createApp({
     />
 
     <div v-if="showSyncInfo" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="showSyncInfo = false">
-      <div class="bg-ink2 border border-white/10 rounded-2xl w-full max-w-lg p-5 text-paper text-sm leading-relaxed">
+      <div class="bg-ink2 border border-black/10 rounded-2xl w-full max-w-lg p-5 text-paper text-sm leading-relaxed">
         <h3 class="font-display font-semibold text-lg mb-2">Chưa cấu hình đồng bộ nhiều thiết bị</h3>
         <p class="text-paper/60 mb-3">Ứng dụng đang lưu dữ liệu bằng <span class="font-mono text-copper">localStorage</span> — chỉ thiết bị này thấy được thay đổi. Để nhiều nhân viên trên nhiều điện thoại/máy tính cùng thấy trạng thái bàn theo thời gian thực, điền cấu hình Firebase vào <span class="font-mono text-copper">js/config.js</span> (xem hướng dẫn kèm theo).</p>
         <button @click="showSyncInfo = false" class="w-full py-2.5 rounded-lg bg-copper text-ink font-semibold text-sm mt-2">Đã hiểu</button>
+      </div>
+    </div>
+
+    <div v-if="showDeleteConfirm" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="cancelDeleteTable">
+      <div class="bg-ink2 border border-rust/30 rounded-2xl w-full max-w-md p-5 text-paper text-sm leading-relaxed">
+        <h3 class="font-display font-semibold text-lg mb-2 text-rust"><i class="fa-solid fa-triangle-exclamation mr-1.5"></i>Xác nhận xóa bàn</h3>
+        <p class="text-paper/70 mb-4">Bạn có chắc muốn xóa <span class="font-semibold text-paper">{{ pendingDeleteTable?.name }}</span>? Bàn sẽ được chuyển vào mục Lịch Sử và không thể hoàn tác.</p>
+        <div class="flex gap-2">
+          <button @click="cancelDeleteTable" class="flex-1 py-2.5 rounded-lg bg-black/5 border border-black/10 text-paper font-medium text-sm">Hủy</button>
+          <button @click="confirmDeleteTable" class="flex-1 py-2.5 rounded-lg bg-rust text-white font-semibold text-sm">Xóa Bàn</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showDeleteSaleConfirm" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="cancelDeleteSale">
+      <div class="bg-ink2 border border-rust/30 rounded-2xl w-full max-w-md p-5 text-paper text-sm leading-relaxed">
+        <h3 class="font-display font-semibold text-lg mb-2 text-rust"><i class="fa-solid fa-triangle-exclamation mr-1.5"></i>Xác nhận xóa lịch sử</h3>
+        <p class="text-paper/70 mb-4">Bạn có chắc muốn xóa vĩnh viễn bản ghi <span class="font-semibold text-paper">{{ pendingDeleteSale?.tableName }}</span> khỏi lịch sử? Dữ liệu trên Firebase sẽ bị xóa và không thể hoàn tác.</p>
+        <div class="flex gap-2">
+          <button @click="cancelDeleteSale" class="flex-1 py-2.5 rounded-lg bg-black/5 border border-black/10 text-paper font-medium text-sm">Hủy</button>
+          <button @click="confirmDeleteSale" class="flex-1 py-2.5 rounded-lg bg-rust text-white font-semibold text-sm">Xóa Lịch Sử</button>
+        </div>
       </div>
     </div>
 

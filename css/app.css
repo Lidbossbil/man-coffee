@@ -1,11 +1,11 @@
-body { background: #1B1712; }
+body { background: #F5F0E6; }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-thumb { background: #BE7B45; border-radius: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 
 /* Ticket / receipt motif — signature element for the table & order cards */
 .ticket {
-  background: #F6F0E4;
+  background: #FFFFFF;
   position: relative;
   clip-path: polygon(
     0% 6px, 3% 0%, 6% 6px, 9% 0%, 12% 6px, 15% 0%, 18% 6px, 21% 0%, 24% 6px, 27% 0%, 30% 6px, 33% 0%, 36% 6px, 39% 0%, 42% 6px, 45% 0%, 48% 6px, 51% 0%, 54% 6px, 57% 0%, 60% 6px, 63% 0%, 66% 6px, 69% 0%, 72% 6px, 75% 0%, 78% 6px, 81% 0%, 84% 6px, 87% 0%, 90% 6px, 93% 0%, 96% 6px, 99% 0%, 100% 6px,
@@ -49,7 +49,7 @@ body { background: #1B1712; }
   transition: background 0.15s ease, transform 0.15s ease;
 }
 .ai-chatbox-fab:hover { background: #8F5A2E; }
-.ai-chatbox-fab--open { background: #33291F; color: #F6F0E4; border: 1px solid rgba(255, 255, 255, 0.12); }
+.ai-chatbox-fab--open { background: #2A241D; color: #F5F0E6; border: 1px solid rgba(0, 0, 0, 0.12); }
 .ai-chatbox-panel {
   position: absolute;
   bottom: calc(3.25rem + 0.75rem);
@@ -58,8 +58,8 @@ body { background: #1B1712; }
   max-height: min(28rem, calc(100vh - 6rem));
   display: flex;
   flex-direction: column;
-  background: #262019;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 1rem;
   overflow: hidden;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
@@ -69,16 +69,16 @@ body { background: #1B1712; }
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 0.9rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: #1B1712;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: #EDE4D3;
 }
 .ai-chatbox-icon-btn {
   width: 2rem;
   height: 2rem;
   border-radius: 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   background: transparent;
-  color: #F6F0E4;
+  color: #241F19;
   opacity: 0.7;
   cursor: pointer;
 }
@@ -107,29 +107,29 @@ body { background: #1B1712; }
   align-self: flex-end;
   background: rgba(190, 123, 69, 0.2);
   border: 1px solid rgba(190, 123, 69, 0.35);
-  color: #F6F0E4;
+  color: #241F19;
 }
 .ai-chatbox-bubble--bot {
   align-self: flex-start;
-  background: #1B1712;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #EDE4D3;
+  background: #EDE4D3;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #241F19;
 }
 .ai-chatbox-compose {
   display: flex;
   gap: 0.5rem;
   padding: 0.65rem 0.75rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: #1B1712;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  background: #EDE4D3;
 }
 .ai-chatbox-input {
   width: 100%;
-  background: #262019;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.15);
   border-radius: 0.5rem;
   padding: 0.5rem 0.65rem;
   font-size: 0.8rem;
-  color: #F6F0E4;
+  color: #241F19;
   outline: none;
 }
 .ai-chatbox-input:focus { border-color: #BE7B45; }
@@ -146,9 +146,9 @@ body { background: #1B1712; }
 .ai-chatbox-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
 .ai-chatbox-btn-ghost {
   background: transparent;
-  color: #F6F0E4;
+  color: #241F19;
   opacity: 0.65;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.15);
   border-radius: 0.5rem;
   padding: 0.5rem 0.75rem;
   font-size: 0.75rem;
