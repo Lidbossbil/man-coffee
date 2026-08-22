@@ -16,7 +16,7 @@ export default {
     sortedTables: { type: Array, default: () => [] },
     salesHistory: { type: Array, default: () => [] },
   },
-  emits: ['open-new', 'open-order'],
+  emits: ['open-new', 'open-order', 'delete-table'],
   setup(props) {
     const closedHistoryGroups = computed(() => {
       const sorted = [...props.salesHistory].sort((a, b) => b.closedAt - a.closedAt);
@@ -77,10 +77,17 @@ export default {
             <h4 class="font-display font-semibold text-base leading-tight">{{ tb.name }}</h4>
             <p class="text-[11px] text-ash">{{ tb.type === 'mang_di' ? 'Mang đi' : 'Tại chỗ' }}</p>
           </div>
-          <span class="stamp text-[9px] font-bold px-1.5 py-0.5 shrink-0"
-            :class="tableRemaining(tb) <= 0 ? 'text-sage' : 'text-rust'">
-            {{ tableRemaining(tb) <= 0 ? 'ĐÃ TT' : 'CÒN NỢ' }}
-          </span>
+          <div class="flex flex-col items-end gap-1 shrink-0">
+            <span class="stamp text-[9px] font-bold px-1.5 py-0.5"
+              :class="tableRemaining(tb) <= 0 ? 'text-sage' : 'text-rust'">
+              {{ tableRemaining(tb) <= 0 ? 'ĐÃ TT' : 'CÒN NỢ' }}
+            </span>
+            <button v-if="tableRemaining(tb) <= 0" @click.stop="$emit('delete-table', tb)"
+              title="Xóa bàn & chuyển vào lịch sử"
+              class="text-[10px] text-ash hover:text-rust flex items-center gap-1">
+              <i class="fa-solid fa-trash"></i> Xóa
+            </button>
+          </div>
         </div>
         <div class="dash-divider my-2"></div>
         <ul class="text-xs space-y-0.5 mb-2 max-h-16 overflow-hidden">
